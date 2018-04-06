@@ -2,7 +2,7 @@
 title: "Detect Weight Lifting Exercise Using Machine Learning"
 author: "Brian Yi Liu"
 date: "April 5, 2018"
-output: html_document
+output: md_document
 ---
 
 ```{r setup, include=FALSE}
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE, cache=TRUE)
 
 ## Summary
 
-This project will use machine learning algorithm to quantify how well people perform certain exercise. Activity data from the accelerometers of personal wearable devices will be used to predict whether the subject performed lifts correctly and incorrectly in 5 different ways. The data includes activity information on the belt, forearm, arm and dumbell of 6 participants. Two ensemble machine learning methods, random forest and gradient boosting with 10-fold corss-validation will be used to obtain prediction with a high accuracy. Random forest produced the higher accuracy with 99.06% and is selected to predict the test case.
+This project will use machine learning algorithm to quantify how well people perform certain exercise. Activity data from the accelerometers of personal wearable devices will be used to predict whether the subject performed lifts correctly and incorrectly in 5 different ways. The data includes activity information on the belt, forearm, arm and dumbell of 6 participants. Two ensemble machine learning methods, random forest and gradient boosting with 10-fold corss-validation will be used to obtain prediction with a high accuracy. Random forest produced highest accuracy and is selected to predict the test case.
 
 ## Library and Data Loading
 `caret` package is used for applying the machine learning algorithm
@@ -60,9 +60,10 @@ We then use the model we developed to fit the Test set data and measure accuracy
 ```{r}
 print(modFitRF)
 predRF<-predict(modFitRF,newdata=Test)
-confusionMatrix(predRF,Test$classe)
+cm1<-confusionMatrix(predRF,Test$classe)
+cm1
 ```
-From the confusion matrix, we can see that is accuracy of the random forest model is 99.06%.
+From the confusion matrix, we can see that is accuracy of the random forest model is `r round(cm1$overall[1]*100,2)`%.
 
 ## Gradient Boost Training
 ```{r}
@@ -72,9 +73,10 @@ We then use the model we developed to fit the Test set data and measure accuracy
 ```{r}
 print(modFitGBM)
 predGBM<-predict(modFitGBM,newdata=Test)
-confusionMatrix(predGBM,Test$classe)
+cm2<-confusionMatrix(predGBM,Test$classe)
+cm2
 ```
-The gradientboosting model generated an accuracy of 96%. Since random forest produced a more accurate model of 99.06%. We will use random forest model to classify the test set.
+The gradient boosting model generated an accuracy of `r round(cm2$overall[1]*100,2)`%. Since random forest produced a more accurate model of `r round(cm1$overall[1]*100,2)`%. We will use random forest model to classify the test set.
 
 ## Classifying the test set
 The twenty test cases can then be determined using the following algorithm.
