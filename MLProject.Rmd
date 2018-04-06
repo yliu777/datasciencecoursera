@@ -1,0 +1,84 @@
+---
+title: "Detect Weight Lifting Exercise Using Machine Learning"
+author: "Brian Yi Liu"
+date: "April 5, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache=TRUE)
+```
+
+## Summary
+
+This project will use machine learning algorithm to quantify how well people perform certain exercise. Activity data from the accelerometers of personal wearable devices will be used to predict whether the subject performed lifts correctly and incorrectly in 5 different ways. The data includes activity information on the belt, forearm, arm and dumbell of 6 participants. Two ensemble machine learning methods, random forest and gradient boosting with 10-fold corss-validation will be used to obtain prediction with a high accuracy. Random forest produced the higher accuracy with 99.06% and is selected to predict the test case.
+
+## Library and Data Loading
+`caret` package is used for applying the machine learning algorithm
+```{r,results='hide'}
+library(caret)
+library(dplyr)
+library(ggplot2)
+```
+The training data and testing data can be downloaded from the source provided in the project description on Coursera.
+```{r}
+TrainData <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"),header=TRUE)
+TestData <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"),header=TRUE)
+str(TrainData)
+```
+## Data Cleaning
+For the training set, we have 19622 on 160 variables. The first 7 variables that include, "X", "user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", "cvtd_timestamp", "new_window", "num_window", are identifiers for the subject and experiment and should be excluded from the analysis. 
+```{r}
+TrainData<-select(TrainData,-(X:num_window))
+TestData<-select(TestData,-(X:num_window))
+```
+We also noticed a lot of the variables have 'NA' or blank values, these variables will not provide useful information for our analysis and can make our model less accurate, thus we removed variables that contains more than 95% 'NA' or blank values.
+```{r}
+TestData<-select(TestData,which(colSums(is.na(TrainData)|TrainData=="")<0.95*nrow(TrainData)))
+TrainData<-select(TrainData,which(colSums(is.na(TrainData)|TrainData=="")<0.95*nrow(TrainData)))
+dim(TrainData)
+```
+After the clean up, the data set will contain 53 variables, we will use 'classe' as our response variable and the other 52 variables as our predictors. 
+
+For the machine learning, we will use the TestData as validation, and split TrainData into 60% training and 40% testing. We will also set a seed of 777 to have a consistent result for the algorithm during different runs. 
+
+```{r}
+set.seed(777)
+inTrain <- createDataPartition(TrainData$classe, p=0.6, list=FALSE)
+Train <- TrainData[inTrain,]
+Test <- TrainData[-inTrain,]
+```
+We will have use a 10-fold cross validation to improve the efficiency of the model and reduce the chance of overfitting.
+```{r}
+trainControl<-trainControl(method="cv",number=10)
+```
+## Random Forest Training
+```{r}
+modFitRF<-train(classe~.,data=Train,method='rf',trControl=trainControl,verbose=FALSE)
+```
+We then use the model we developed to fit the Test set data and measure accuracy thorugh confusion matrix.
+```{r}
+print(modFitRF)
+predRF<-predict(modFitRF,newdata=Test)
+confusionMatrix(predRF,Test$classe)
+```
+From the confusion matrix, we can see that is accuracy of the random forest model is 99.06%.
+
+## Gradient Boost Training
+```{r}
+modFitGBM<-train(classe~.,data=Train,method='gbm',trControl=trainControl,verbose=FALSE)
+```
+We then use the model we developed to fit the Test set data and measure accuracy thorugh confusion matrix.
+```{r}
+print(modFitGBM)
+predGBM<-predict(modFitGBM,newdata=Test)
+confusionMatrix(predGBM,Test$classe)
+```
+The gradientboosting model generated an accuracy of 96%. Since random forest produced a more accurate model of 99.06%. We will use random forest model to classify the test set.
+
+## Classifying the test set
+The twenty test cases can then be determined using the following algorithm.
+```{r}
+TestPred<-predict(modFitRF,newdata=TestData)
+data.frame(Result=TestPred)
+```
